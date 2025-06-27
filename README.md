@@ -35,6 +35,7 @@ A classic **Snake Game** built with **HTML**, **CSS**, and **JavaScript** — no
 ├── style.css          # CSS styles for the game
 ├── script.js          # JavaScript game logic
 ├── preview.png        # Screenshot/preview image
+├── favcion.png        # Favicon image
 └── README.md          # Project documentation
 ```
 
