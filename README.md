@@ -45,8 +45,3 @@ A classic **Snake Game** built with **HTML**, **CSS**, and **JavaScript** — no
 Just open `index.html` in any modern browser. No setup required!
 
 ---
-
-## 💡 Future Ideas
-
--   Add sound effects 🎵
--   Difficulty scaling ⏱️

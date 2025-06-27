@@ -7,6 +7,7 @@ const finalScoreElement = document.getElementById('finalScore');
 const startScreen = document.getElementById('startScreen');
 const gameArea = document.getElementById('gameArea');
 const currentDifficultyElement = document.getElementById('currentDifficulty');
+const soundToggle = document.getElementById('soundToggle');
 
 // Game variables
 let gridSize = 20;
@@ -20,6 +21,7 @@ let highScore = 0;
 let gameRunning = false;
 let gameSpeed = 150; // Default medium speed
 let selectedSpeed = 150;
+let soundEnabled = true;
 
 // Speed to difficulty name mapping
 const speedNames = {
@@ -28,6 +30,75 @@ const speedNames = {
     100: 'Hard',
     50: 'Insane',
 };
+
+// Audio Context and Sound Effects
+let audioContext;
+
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+function playSound(frequency, duration, type = 'sine', volume = 0.3) {
+    if (!soundEnabled || !audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    oscillator.type = type;
+
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(volume, audioContext.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+}
+
+function playEatSound() {
+    // Happy eating sound - ascending notes
+    if (!soundEnabled) return;
+    playSound(523, 0.1, 'square', 0.2); // C5
+    setTimeout(() => playSound(659, 0.1, 'square', 0.2), 50); // E5
+    setTimeout(() => playSound(784, 0.1, 'square', 0.2), 100); // G5
+}
+
+function playGameOverSound() {
+    // Sad descending sound
+    if (!soundEnabled) return;
+    playSound(523, 0.2, 'sawtooth', 0.3); // C5
+    setTimeout(() => playSound(466, 0.2, 'sawtooth', 0.3), 150); // Bb4
+    setTimeout(() => playSound(415, 0.2, 'sawtooth', 0.3), 300); // Ab4
+    setTimeout(() => playSound(349, 0.4, 'sawtooth', 0.3), 450); // F4
+}
+
+function playButtonSound() {
+    // Quick button click sound
+    if (!soundEnabled) return;
+    playSound(800, 0.1, 'square', 0.1);
+}
+
+function playMoveSound() {
+    // Subtle movement sound
+    if (!soundEnabled) return;
+    playSound(200, 0.05, 'triangle', 0.05);
+}
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+    soundToggle.classList.toggle('muted', !soundEnabled);
+
+    if (soundEnabled) {
+        initAudio();
+        playButtonSound();
+    }
+}
 
 function initCanvas() {
     const isMobile = window.innerWidth <= 768;
@@ -42,6 +113,7 @@ function initCanvas() {
 function selectSpeed(speed) {
     selectedSpeed = speed;
     gameSpeed = speed;
+    playButtonSound();
 
     // Update UI
     document.querySelectorAll('.speed-option').forEach((option) => {
@@ -64,6 +136,8 @@ function saveHighScore() {
 }
 
 function startGame() {
+    initAudio();
+    playButtonSound();
     initCanvas();
     startScreen.style.display = 'none';
     gameArea.style.display = 'block';
@@ -144,6 +218,7 @@ function moveSnake() {
         score += 1;
         scoreElement.textContent = score;
         generateFood();
+        playEatSound();
 
         if (score > highScore) {
             highScore = score;
@@ -174,6 +249,7 @@ function checkCollision() {
 function gameOver() {
     gameRunning = false;
     finalScoreElement.textContent = score;
+    playGameOverSound();
 
     // Set current speed as selected in game over screen
     document.querySelectorAll('#gameOver .speed-option').forEach((option) => {
@@ -187,6 +263,7 @@ function gameOver() {
 }
 
 function restartGame() {
+    playButtonSound();
     resetGame();
     gameRunning = true;
     gameSpeed = selectedSpeed;
@@ -232,24 +309,34 @@ function changeDirection(event) {
     const goingRight = dx === 1;
     const goingLeft = dx === -1;
 
+    let moved = false;
+
     if (keyPressed === LEFT_KEY && !goingRight) {
         dx = -1;
         dy = 0;
+        moved = true;
     }
 
     if (keyPressed === UP_KEY && !goingDown) {
         dx = 0;
         dy = -1;
+        moved = true;
     }
 
     if (keyPressed === RIGHT_KEY && !goingLeft) {
         dx = 1;
         dy = 0;
+        moved = true;
     }
 
     if (keyPressed === DOWN_KEY && !goingUp) {
         dx = 0;
         dy = 1;
+        moved = true;
+    }
+
+    if (moved) {
+        playMoveSound();
     }
 }
 
@@ -262,31 +349,41 @@ function changeDirectionMobile(direction) {
     const goingRight = dx === 1;
     const goingLeft = dx === -1;
 
+    let moved = false;
+
     switch (direction) {
         case 'left':
             if (!goingRight) {
                 dx = -1;
                 dy = 0;
+                moved = true;
             }
             break;
         case 'up':
             if (!goingDown) {
                 dx = 0;
                 dy = -1;
+                moved = true;
             }
             break;
         case 'right':
             if (!goingLeft) {
                 dx = 1;
                 dy = 0;
+                moved = true;
             }
             break;
         case 'down':
             if (!goingUp) {
                 dx = 0;
                 dy = 1;
+                moved = true;
             }
             break;
+    }
+
+    if (moved) {
+        playMoveSound();
     }
 }
 
@@ -334,4 +431,10 @@ window.addEventListener('resize', function () {
         initCanvas();
         drawGame();
     }
+});
+
+// Initialize audio on first user interaction
+document.addEventListener('click', function initAudioOnClick() {
+    initAudio();
+    document.removeEventListener('click', initAudioOnClick);
 });
