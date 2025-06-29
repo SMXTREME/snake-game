@@ -19,17 +19,35 @@ let dy = 0;
 let score = 0;
 let highScore = 0;
 let gameRunning = false;
-let gameSpeed = 150; // Default medium speed
-let selectedSpeed = 150;
+let gameSpeed = 300; // Default medium speed
+let selectedSpeed = 300;
 let soundEnabled = true;
 
 // Speed to difficulty name mapping
 const speedNames = {
-    200: 'Easy',
-    150: 'Medium',
-    100: 'Hard',
-    50: 'Insane',
+    400: 'Easy',
+    300: 'Medium',
+    200: 'Hard',
+    100: 'Insane',
 };
+
+// Cookie utility functions
+function setCookie(name, value, days = 365) {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+}
+
+function getCookie(name) {
+    const nameEQ = name + '=';
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
 
 // Audio Context and Sound Effects
 let audioContext;
@@ -125,14 +143,13 @@ function selectSpeed(speed) {
 }
 
 function loadHighScore() {
-    const saved = window.gameData?.highScore || 0;
-    highScore = saved;
+    const savedHighScore = getCookie('HS');
+    highScore = savedHighScore ? parseInt(savedHighScore) : 0;
     highScoreElement.textContent = highScore;
 }
 
 function saveHighScore() {
-    if (!window.gameData) window.gameData = {};
-    window.gameData.highScore = highScore;
+    setCookie('HS', highScore.toString());
 }
 
 function startGame() {
